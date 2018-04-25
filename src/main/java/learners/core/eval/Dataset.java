@@ -131,6 +131,13 @@ public abstract class Dataset implements LabelDist{
         index = 0;
     }
 
+    protected final void reset(double[][] inputs, double[][] targets, Dataset labelDist){
+        this.labelSet = new HashSet(labelDist.labelSet);
+        this.inputs = inputs;
+        this.targets = targets;
+        index = 0;
+    }
+
     /**
      * Initialize the dataset from a data file.
      *
@@ -141,4 +148,23 @@ public abstract class Dataset implements LabelDist{
     public abstract void fromInput(String path, int[] selectedAttributes) throws IOException;
 
     public abstract String getDataPath();
+
+    public static final class InheritedDataset extends Dataset{
+        String path;
+        public InheritedDataset(double[][] inputs, double[][] targets, Dataset labelDist){
+            super(labelDist.isNominal());
+            reset(inputs, targets, labelDist);
+            path = (labelDist.getDataPath() != null ? labelDist.getDataPath() : "") + "_inherited";
+
+        }
+        @Override
+        public void fromInput(String path, int[] selectedAttributes) throws IOException {
+            return;
+        }
+
+        @Override
+        public String getDataPath() {
+            return path;
+        }
+    }
 }
