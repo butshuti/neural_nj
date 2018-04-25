@@ -39,7 +39,7 @@ public class Score {
         String expectedLabel = labelDist.getBestMatch(expected);
         String predictedLabel = labelDist.getBestMatch(prediction);
         if(!predictionMatrix.containsKey(expectedLabel)){
-            predictionMatrix.put(expectedLabel, new ArrayList<>());
+            predictionMatrix.put(expectedLabel, new ArrayList<String>());
         }
         if(!predictions.containsKey(predictedLabel)){
             predictions.put(predictedLabel, 0);
