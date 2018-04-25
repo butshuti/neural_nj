@@ -1,4 +1,4 @@
-image: java:8
+image: gradle
 
 pipelines:
   default:
@@ -6,4 +6,4 @@ pipelines:
         caches:
           - gradle
         script:
-          - bash ./gradlew build
+          - bash ./gradle build
