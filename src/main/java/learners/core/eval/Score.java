@@ -7,7 +7,7 @@ public class Score {
     private LabelDist labelDist;
     private Map<String, List<String>> predictionMatrix;
     private Map<String, Integer> predictions;
-    private double margin;
+    private double margin, mse = 0;
 
     public Score(LabelDist labelDist, double margin){
         pos = 0;
@@ -25,12 +25,13 @@ public class Score {
         neg++;
     }
 
-    double getAccuracy(){
+    public double getAccuracy(){
         return ((double)pos) / (pos + neg);
     }
 
     public void recordResult(double[] expected, double[] prediction, boolean verbose){
         double dist = labelDist.dist(expected, prediction);
+        mse += dist;
         if(dist <= margin){
             incr();
         }else{
@@ -52,8 +53,12 @@ public class Score {
     }
 
     public String printSummary(){
-        double score = 0;
-        StringBuilder sb = new StringBuilder("\n====Contingency Matrix : ====\n");
+        int total = pos + neg;
+        double AvgPrecision = 0, AvgRecall = 0;
+        int globalTP = 0, globalFP = 0, globalTN = 0, globalFN = 0;
+        StringBuilder sb = new StringBuilder("\n");
+        sb.append("=================================\n");
+        sb.append("====Contingency Matrix : ========\n");
         sb.append("---<EXPECTED => {PREDICTED}>-----\n");
         sb.append("---------------------------------\n");
         for(String actual : predictionMatrix.keySet()){
@@ -76,22 +81,38 @@ public class Score {
                 }
             }
             int fp = predictions.get(actual) - tp;
-            double precision = 1.0*tp / (tp + fp);
-            double recall = 1.0*tp / (tp + fn);
-            score += 2 * ((precision * recall)/(precision + recall));
+            int tn = total - predictions.get(actual) - fn;
+            globalTP += tp;
+            globalFP += fp;
+            globalTN += tn;
+            globalFN += fn;
+            AvgPrecision += 1.0*tp / (tp + fp);
+            AvgRecall += 1.0*tp / (tp + fn);
             sb.append(actual);
             sb.append(" => ");
             sb.append(expected.toString());
             sb.append("\n");
             sb.append("---------------------------------\n");
         }
-        score /= predictionMatrix.keySet().size();
+        AvgPrecision /= predictionMatrix.keySet().size();
+        AvgRecall /= predictionMatrix.keySet().size();
+        double score = 2 * ((AvgPrecision * AvgRecall)/(AvgPrecision + AvgRecall));
         score = Math.round(100 * score)/100.0;
-        double accuracy = Math.round(100 * getAccuracy())/100.0;
-        sb.append("Accuracy: ");
-        sb.append(String.valueOf(accuracy));
-        sb.append("\t; ");
-        sb.append("F-Score: ");
+        double accuracy = 1.0 * (globalTP + globalTN) / (globalTN + globalFN + globalFP + globalTP);
+        accuracy = Math.round(100 * accuracy)/100.0;
+        mse = Math.sqrt(mse / total);
+        double computational_accuracy = Math.round(100 * getAccuracy())/100.0;
+        sb.append("---------------------------------\n");
+        sb.append("Evaluation 1: regression");
+        sb.append("\n.................................\n");
+        sb.append(String.format("** RMSE: %.2f\n", mse));
+        sb.append(String.format("** Accuracy within %.2f: \t %.2f\n", margin, computational_accuracy));
+        sb.append("\n---------------------------------\n");
+        sb.append("Evaluation 2: classification");
+        sb.append("\n.................................\n");
+        sb.append(String.format("Accuracy: %.2f", accuracy));
+        sb.append("\t;  ");
+        sb.append(" F-Score: ");
         sb.append(String.valueOf(score));
         sb.append("\n---------------------------------\n");
         return sb.toString();

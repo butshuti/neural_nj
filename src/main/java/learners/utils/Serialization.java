@@ -13,6 +13,18 @@ public class Serialization {
         fos.close();
     }
 
+    public static Object loadModelFromResources(String name) throws IOException, ClassNotFoundException {
+        InputStream in = Serialization.class.getResourceAsStream("/" + name + SUFFIX);
+        if(in != null){
+            ObjectInputStream ois = new ObjectInputStream(in);
+            Object obj = ois.readObject();
+            ois.close();
+            in.close();
+            return obj;
+        }
+        throw new FileNotFoundException("Resource not found: " + name);
+    }
+
     public static Object loadModel(String path) throws IOException, ClassNotFoundException {
         FileInputStream fis = new FileInputStream(path + SUFFIX);
         ObjectInputStream ois = new ObjectInputStream(fis);

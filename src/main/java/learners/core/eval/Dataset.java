@@ -1,6 +1,8 @@
 package learners.core.eval;
 
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.Serializable;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
@@ -11,23 +13,12 @@ import static learners.core.eval.Dataset.NominalCategory.UNKNOWN_CATEGORY;
 /**
  * Interface for loading and operating on datasets.
  */
-public abstract class Dataset implements LabelDist{
-    /**
-     * Wrapper for named/labelled feature points.
-     */
-    protected static final class NominalCategory{
-        public static final String UNKNOWN_CATEGORY = "UNKNOWN";
-        private String label;
-        private double[] numerciValue;
-        NominalCategory(String l, double[] val){
-            label = l;
-            numerciValue = val;
-        }
-    }
+public abstract class Dataset{
 
     private double[][] inputs; /*Set of input vectors in the dataset*/
     private double[][] targets; /*Set of target values (vectors) corresponding to the input vectors*/
     private Set<NominalCategory> labelSet; /*Set of pivot target values used in projecting predictions on the training set.*/
+    private LabelSet labelMatcher;
     private int index;
     private boolean isNominal; /*Whether categories are nominal*/
 
@@ -41,6 +32,7 @@ public abstract class Dataset implements LabelDist{
         targets = null;
         index = 0;
         isNominal = nominal;
+        labelMatcher = new LabelSet();
     }
 
     /**
@@ -59,35 +51,6 @@ public abstract class Dataset implements LabelDist{
         return inputs != null && index < inputs.length;
     }
 
-    @Override
-    public double dist(double[] p1, double[] p2){
-        if(p1 != null && p2 != null && p1.length == p2.length && p1.length > 0){
-            double diff = 0;
-            for(int i=0; i<p1.length; i++){
-                diff += (p1[i] - p2[i]) * (p1[i] - p2[i]);
-            }
-            return Math.sqrt(diff/p1.length);
-        }
-        return Double.MAX_VALUE;
-    }
-
-    @Override
-    public String getBestMatch(double[] target){
-        NominalCategory bestMatch = null;
-        double diff = 0;
-        for(NominalCategory categ : labelSet){
-            double curDiff = dist(target, categ.numerciValue);
-            if(bestMatch == null || curDiff < diff){
-                diff = curDiff;
-                bestMatch = categ;
-            }
-        }
-        if(bestMatch != null){
-            return String.valueOf(bestMatch.label);
-        }
-        return String.valueOf(UNKNOWN_CATEGORY);
-    }
-
     /**
      * Get all input vectors.
      * @return
@@ -102,6 +65,14 @@ public abstract class Dataset implements LabelDist{
      */
     public final double[][] getTargets() {
         return targets;
+    }
+
+    /**
+     * Get label mappings
+     * @return
+     */
+    public LabelDist getLabels(){
+        return labelMatcher;
     }
 
     /**
@@ -128,6 +99,7 @@ public abstract class Dataset implements LabelDist{
             }
             labelSet.add(new NominalCategory(targets[i], this.targets[i]));
         }
+        labelMatcher = labelMatcher.setLabelSet(labelSet);
         index = 0;
     }
 
@@ -135,6 +107,7 @@ public abstract class Dataset implements LabelDist{
         this.labelSet = new HashSet(labelDist.labelSet);
         this.inputs = inputs;
         this.targets = targets;
+        labelMatcher = labelMatcher.setLabelSet(labelSet);
         index = 0;
     }
 
@@ -145,7 +118,16 @@ public abstract class Dataset implements LabelDist{
      * @param selectedAttributes a list of attribute indices to include
      * @throws IOException
      */
-    public abstract void fromInput(String path, int[] selectedAttributes) throws IOException;
+    public abstract void fromFile(String path, int[] selectedAttributes) throws IOException;
+
+    /**
+     * Initialize the dataset from a data file.
+     *
+     * @param inputStream an input stream
+     * @param selectedAttributes a list of attribute indices to include
+     * @throws IOException
+     */
+    public abstract void fromInputStream(InputStream inputStream, int[] selectedAttributes) throws IOException;
 
     public abstract String getDataPath();
 
@@ -158,13 +140,71 @@ public abstract class Dataset implements LabelDist{
 
         }
         @Override
-        public void fromInput(String path, int[] selectedAttributes) throws IOException {
+        public void fromFile(String path, int[] selectedAttributes) throws IOException {
+            return;
+        }
+
+        @Override
+        public void fromInputStream(InputStream inputStream, int[] selectedAttributes) throws IOException {
             return;
         }
 
         @Override
         public String getDataPath() {
             return path;
+        }
+    }
+
+    /**
+     * Wrapper for named/labelled feature points.
+     */
+    protected static final class NominalCategory implements Serializable{
+        public static final String UNKNOWN_CATEGORY = "UNKNOWN";
+        private String label;
+        private double[] numerciValue;
+        NominalCategory(String l, double[] val){
+            label = l;
+            numerciValue = val;
+        }
+    }
+
+    private static final class LabelSet implements LabelDist, Serializable{
+        private Set<NominalCategory> labelSet;
+
+        private LabelSet(){}
+
+        private LabelSet setLabelSet(Set<NominalCategory> labelSet){
+            this.labelSet = labelSet;
+            return this;
+        }
+
+        @Override
+        public double dist(double[] p1, double[] p2){
+            if(p1 != null && p2 != null && p1.length == p2.length && p1.length > 0){
+                double diff = 0;
+                for(int i=0; i<p1.length; i++){
+                    diff += (p1[i] - p2[i]) * (p1[i] - p2[i]);
+                }
+                return Math.sqrt(diff/p1.length);
+            }
+            return Double.MAX_VALUE;
+        }
+
+        @Override
+        public String getBestMatch(double[] target){
+            NominalCategory bestMatch = null;
+            double diff = 0;
+            for(NominalCategory categ : labelSet){
+                double curDiff = dist(target, categ.numerciValue);
+                if(bestMatch == null || curDiff < diff){
+                    diff = curDiff;
+                    bestMatch = categ;
+                }
+            }
+            if(bestMatch != null){
+                return String.valueOf(bestMatch.label);
+            }
+            return String.valueOf(UNKNOWN_CATEGORY);
         }
     }
 }

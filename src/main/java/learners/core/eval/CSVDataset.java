@@ -4,6 +4,7 @@ import learners.utils.Arithmetic;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Scanner;
@@ -11,7 +12,7 @@ import java.util.Scanner;
 /**
  * A dataset constructed from csv files.
  */
-public class CSVDataset extends Dataset {
+public class CSVDataset extends Dataset{
     private String path;
 
     public CSVDataset(boolean nominal){
@@ -35,42 +36,28 @@ public class CSVDataset extends Dataset {
 
     /**
      * Parse an input csv file and initialize this dataset from the file's contents.
+     * @param inputStream an input stream
+     * @param selectedAttributes a list of attribute indices to include
+     * @throws IOException
+     */
+    @Override
+    public void fromInputStream(InputStream inputStream, int[] selectedAttributes) throws IOException {
+        if(inputStream != null){
+            loadFromScanner(new Scanner(inputStream), selectedAttributes);
+        }
+    }
+
+    /**
+     * Parse an input csv file and initialize this dataset from the file's contents.
      * @param path a path to a data file/directory
      * @param selectedAttributes a list of attribute indices to include
      * @throws IOException
      */
     @Override
-    public void fromInput(String path, int[] selectedAttributes) throws IOException {
+    public void fromFile(String path, int[] selectedAttributes) throws IOException {
         File file = new File(path);
         if(file.exists() && file.canRead()){
-            Scanner scanner = new Scanner(file);
-            List<double[]> inputVals = new ArrayList<>();
-            List<String> targetVals = new ArrayList<>();
-            String header = scanner.nextLine();
-            int numCols = header.split(",").length;
-            while (scanner.hasNext()){
-                String toks[] = scanner.nextLine().split(",");
-                if(toks.length != numCols){
-                    throw new IOException("Malformatted CSV file: unequal number of columns.");
-                }
-                double cur[] = new double[toks.length - 1];
-                for(int i=0; i<cur.length; i++){
-                    if(selectedAttributes == null || isSelected(i, selectedAttributes)){
-                        cur[i] = Double.parseDouble(toks[i]);
-                    }
-                }
-                if(!Arithmetic.isNan(cur)){
-                    inputVals.add(cur);
-                    targetVals.add(toks[toks.length-1]);
-                }
-            }
-            double[][] inputs = new double[inputVals.size()][];
-            String[] targets = new String[inputVals.size()];
-            for(int i=0; i<inputs.length; i++){
-                inputs[i] = inputVals.get(i);
-                targets[i] = targetVals.get(i);
-            }
-            this.reset(inputs, targets);
+            loadFromScanner(new Scanner(file), selectedAttributes);
             this.path = path;
             return;
         }
@@ -80,5 +67,35 @@ public class CSVDataset extends Dataset {
     @Override
     public String getDataPath(){
         return path;
+    }
+
+    private void loadFromScanner(Scanner scanner, int[] selectedAttributes) throws IOException {
+        List<double[]> inputVals = new ArrayList<>();
+        List<String> targetVals = new ArrayList<>();
+        String header = scanner.nextLine();
+        int numCols = header.split(",").length;
+        while (scanner.hasNext()){
+            String toks[] = scanner.nextLine().split(",");
+            if(toks.length != numCols){
+                throw new IOException("Malformatted CSV file: unequal number of columns.");
+            }
+            double cur[] = new double[toks.length - 1];
+            for(int i=0; i<cur.length; i++){
+                if(selectedAttributes == null || isSelected(i, selectedAttributes)){
+                    cur[i] = Double.parseDouble(toks[i]);
+                }
+            }
+            if(!Arithmetic.isNan(cur)){
+                inputVals.add(cur);
+                targetVals.add(toks[toks.length-1]);
+            }
+        }
+        double[][] inputs = new double[inputVals.size()][];
+        String[] targets = new String[inputVals.size()];
+        for(int i=0; i<inputs.length; i++){
+            inputs[i] = inputVals.get(i);
+            targets[i] = targetVals.get(i);
+        }
+        this.reset(inputs, targets);
     }
 }

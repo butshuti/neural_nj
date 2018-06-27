@@ -13,6 +13,7 @@ public abstract class ActivationFunction implements Serializable{
      * Sigmoid activation function.
      */
     public static ActivationFunction SIGMOID = new ActivationFunction() {
+        private static final long serialVersionUID = 43015968371L;
         @Override
         public double computeOutput(double input) {
             return 1.0 / (1.0 + Math.exp(-input));
@@ -28,6 +29,7 @@ public abstract class ActivationFunction implements Serializable{
      * tahn activation function
      */
     public static ActivationFunction TANH = new ActivationFunction() {
+        private static final long serialVersionUID = 43015968372L;
         @Override
         public double computeOutput(double input) {
             return (Math.exp(input) - Math.exp(-input))/(Math.exp(input) + Math.exp(-input));
@@ -43,6 +45,7 @@ public abstract class ActivationFunction implements Serializable{
      * Rectified linear unit (ReLU) activation function
      */
     public static ActivationFunction RELU = new ActivationFunction() {
+        private static final long serialVersionUID = 43015968373L;
         @Override
         public double computeOutput(double input) {
             return Math.log(1 + Math.exp(input));
@@ -58,6 +61,7 @@ public abstract class ActivationFunction implements Serializable{
      * Gaussian activation function
      */
     public static ActivationFunction GAUSSIAN = new ActivationFunction() {
+        private static final long serialVersionUID = 43015968374L;
         @Override
         public double computeOutput(double input) {
             return Math.exp(-(input*input));

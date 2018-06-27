@@ -52,10 +52,11 @@ public class DatasetPartition {
         DatasetPartition[] ret = new DatasetPartition[Math.max(2, folds)];
         double[][] inputs = dataset.getInputs();
         double[][] targets = dataset.getTargets();
+        LabelDist labels = dataset.getLabels();
         Instance[] instances = new Instance[inputs.length];
         for(int i=0; i<instances.length; ++i){
             instances[i] = new Instance(inputs[i], targets[i]);
-            instances[i].setIndex((int)dataset.dist(instances[0].targets, instances[i].targets) + (instances.length/ret.length));
+            instances[i].setIndex((int)labels.dist(instances[0].targets, instances[i].targets) + (instances.length/ret.length));
             instances[i].setIndex(instances[i].getIndex() + random.nextInt(instances.length));
         }
         Arrays.sort(instances);
